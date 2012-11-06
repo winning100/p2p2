@@ -18,8 +18,8 @@ private Socket socket;
  * 
  */
 Peer (int initPort) throws IOException{
-	port=initPort;
-	serverSocket=new ServerSocket(port);
+	//port=initPort;
+	//serverSocket=new ServerSocket(port);
 	
 }
 
