@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.util.Scanner;
 
 /***
  * 
@@ -11,14 +12,21 @@ public class Wrapper{
 	
 public static void main(String []args){
 	
-	int port=8888;
-	Peer peer=null;
-	try {
-		peer=new Peer(8888);
-	} catch (IOException e) {
-		e.printStackTrace();
-		System.out.println("the port "+port+" is in use, try another one");
-		//System.out.println("input a new port:");
+	//int nodeId=Integer.parseInt(args[1]);
+	//int serverPort=Integer.parseInt(args[2]);
+	
+	int nodeId=0;
+	int serverPort=8000+0;
+    	
+	PeerServer peerServer=new PeerServer(serverPort,nodeId);
+	System.out.println("start the server, port: "+serverPort+"  nodeId: "+nodeId);
+	peerServer.start();
+	Scanner scanner=new Scanner(System.in);
+	while (true){
+		String cmd=scanner.nextLine();
+		CommandHandle commandHandle=new CommandHandle(cmd);
+		
+		
 	}
 }	
 	

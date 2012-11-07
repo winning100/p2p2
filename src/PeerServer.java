@@ -8,16 +8,19 @@ class PeerServer extends Thread{
 	private int nodeId;
 	ServerSocket serverSocket;
 	Socket socket;
+	Peer peer;
 	
 	public PeerServer(int serverPort, int nodeId){
 		this.serverPort=serverPort;
 		this.nodeId=nodeId;
+		peer=new Peer(this.serverPort,this.nodeId);
 		
 	}
 	
 	
 	@Override
 	public void run(){
+		peer.display();
 		try {
 			listenRequest();
 		} catch (IOException e) {
@@ -27,7 +30,7 @@ class PeerServer extends Thread{
 		
 	}
 	
-	
+
 	public void setPort(int serverPort){
 		this.serverPort=serverPort;
 		}
