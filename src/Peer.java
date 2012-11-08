@@ -54,14 +54,16 @@ public void setPort(int newPort){
 
 
 class FingerTable{
+	
 	int identifier;
 	int tableSize;
 	int successor;
 	int predecessor;
 	int succ_succ;
 	int prede_prede;
-	ArrayList <Integer> table;
+	ArrayList <Integer> table;    // store successor's Node Id
 	Map<String, Boolean> fileList;
+	Map<Integer,String> nodeIpMap; //convert nodeId to ip address.
 	
 	public FingerTable(int identifier, int tableSize){
 		this.identifier=identifier;
@@ -69,6 +71,14 @@ class FingerTable{
 		table=new ArrayList<Integer>();
 		fileList=new HashMap<String, Boolean>();
 		init();
+	}
+	
+	
+	public String getIp(int i){
+		if (nodeIpMap.containsKey(i))
+			return nodeIpMap.get(i);
+		
+		return null;
 	}
 	
 	public void init(){

@@ -1,12 +1,52 @@
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.Socket;
+
 class CommandHandle{
 	String cmd;
 	
 	String []cmdList={"search", "join","le","ls","get","pre"};
+	Peer peer;
 	
-	
-	public CommandHandle(String cmd){
+	public CommandHandle(String cmd, Peer peer){
 		this.cmd=cmd;
+		this.peer=peer;
 	}
+	
+	
+	
+	public BufferedReader getReader(Socket socket){
+		InputStream socketIn=null;
+		try {
+			socketIn = socket.getInputStream();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			System.out.println("get reader error");
+			e.printStackTrace();
+			return null;
+		}
+		return new BufferedReader(new InputStreamReader(socketIn));
+	}
+	
+	public PrintWriter getWriter(Socket socket){
+		OutputStream socketOut=null;
+		try {
+			socketOut=socket.getOutputStream();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			System.out.println("get writer error");
+			
+			e.printStackTrace();
+			return null;
+		}
+		PrintWriter pw=new PrintWriter(socketOut,true);
+		return pw;
+	}
+	
 	
 	/***
 	 * if cmd is legal command
@@ -32,7 +72,12 @@ class CommandHandle{
 			else if (cmd.startsWith("le"))
 				cmdThread=new Leave();
 			else
-				System.out.println("something bad happens");
+				{System.out.println("something bad happens");
+				 return;
+				}
+			cmdThread=new Thread();
+			System.out.println("begin to handle cmd: "+cmd);
+			cmdThread.start();
 		}
 		
 	}

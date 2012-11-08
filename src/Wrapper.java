@@ -24,7 +24,7 @@ public static void main(String []args){
 	Scanner scanner=new Scanner(System.in);
 	while (true){
 		String cmd=scanner.nextLine();
-		CommandHandle commandHandle=new CommandHandle(cmd);
+		CommandHandle commandHandle=new CommandHandle(cmd,peerServer.peer);
 		
 		
 	}
