@@ -52,7 +52,7 @@ class RequestHandle extends Thread{
 	@Override
 	public void run(){
 		//InputStream in=new InputStream(socket.getInputStream());
-		
+		BufferedReader br=getReader();
 	}
 	
 	
