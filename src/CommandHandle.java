@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 class CommandHandle{
 	String cmd;
@@ -91,8 +92,43 @@ class CommandHandle{
 	
 	
 	class Join extends Thread{
+		
+		String dest_ip;
+		int dest_port;
+		
+		Join(){
+			dest_ip=Peer.DEFAULT_DEST_IP;
+			dest_port=Peer.DEFAULT_DEST_PORT;
+		}
+		Join(String ip,int port){
+			/**
+			 * the ip and port format might be checked
+			 */
+			dest_ip=ip;
+			dest_port=port;
+		}
+		
 		@Override
 		public void run(){
+			Socket socket=null;
+			try {
+				socket = new Socket(dest_ip,dest_port);
+			} catch (UnknownHostException e) {
+				
+				e.printStackTrace();
+				System.out.println("the ip or dest_port is illegal");
+				return;
+			} catch (IOException e) {
+				System.out.println("socket set up error");
+				e.printStackTrace();
+				return;
+			}
+			
+			PrintWriter pw=getWriter(socket);
+			String cmd_send="join "+peer.getId();
+			pw.write(cmd_send);  // send out join request
+			BufferedReader br=getReader(socket);
+			
 			
 		}
 		

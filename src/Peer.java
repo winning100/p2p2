@@ -14,6 +14,11 @@ private Socket socket;
 
 public static Map<Integer,Integer> idToPort;
 
+
+public static String DEFAULT_DEST_IP="localhost";
+public static int DEFAULT_DEST_PORT=8000;
+
+
 FingerTable fingerTable;
 //public static int PEER_SERVER_PORT
 
@@ -49,7 +54,11 @@ public void setPort(int newPort){
 	port=newPort;
 }
 	
-	
+
+public int getId(){
+	return identifier;
+}
+
 }
 
 
@@ -100,6 +109,23 @@ class FingerTable{
 		 for (int i=0; i<16; i++)
 			 fileList.put(String.valueOf(i), false);
 		}
+	}
+	
+	//according it's own table to set up a finger table for 
+	int getPredecessorId (int id){
+	
+		int pre=0;
+		
+		return pre;
+		
+	}
+	
+	int getSuccessorId(int id){
+		
+		int suc=0;
+		
+		return suc;
+		
 	}
 	
 	public void display(){
