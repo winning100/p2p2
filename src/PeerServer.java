@@ -20,7 +20,7 @@ class PeerServer extends Thread{
 	
 	@Override
 	public void run(){
-		peer.display();
+		//peer.display();
 		try {
 			listenRequest();
 		} catch (IOException e) {

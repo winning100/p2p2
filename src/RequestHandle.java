@@ -71,7 +71,140 @@ class RequestHandle extends Thread{
 	    if (str[0].equals("join"))
 	    	thread=new JoinHandle(Integer.parseInt(str[1]));
 	    
+	    else if (str[0].equals("findpre"))
+    	{int preId=findPre(Integer.parseInt(str[1]));		
+	    	PrintWriter pw=getWriter();
+	    	pw.print(preId);
+	    	pw.print(peer.getId());
+	    	pw.print("localhost");
+	    	pw.print(preId+8000);
+	    }
+	    else if (str[0].equals("findsuc")){
+	     int sucId=findSuc(Integer.parseInt(str[1]));	
+	    }
+	    else if (str[0].equals("")){
+	    	
+	    }
 	    
+	    
+	}
+	/**
+	 * use fingerTable find out the predecessor for a given Id
+	 * @param id
+	 * @return -1 if error
+	 */
+	int findPre(int id){
+		int localId=peer.getId();
+		
+		int range1=(localId+1)%16;
+		int range2=(localId+2)%16;
+		int range3=(localId+4)%16;
+		int range4=(localId+12)%16;
+		
+		if (range1 > range2)
+		{
+			if ( id >= range1 || id < range2)
+				return peer.fingerTable.getPreTableElement(0);
+		}
+		else
+		{
+			if ( id>=range1 && id < range2)
+				return peer.fingerTable.getPreTableElement(0);
+		}
+		
+		
+		if (range2 > range3)
+		{
+			if ( id >= range2 || id < range3)
+				return peer.fingerTable.getPreTableElement(1);
+		}
+		else
+		{
+			if ( id>=range2 && id < range3)
+				return peer.fingerTable.getPreTableElement(1);
+		}
+		
+		if (range3 > range4)
+		{
+			if ( id >= range3 || id < range4)
+				return peer.fingerTable.getPreTableElement(2);
+		}
+		else
+		{
+			if ( id>=range3 && id < range4)
+				return peer.fingerTable.getPreTableElement(2);
+		}
+		
+		if (range4 > range1)
+		{
+			if ( id >= range4 || id < range1)
+				return peer.fingerTable.getPreTableElement(3);
+		}
+		else
+		{
+			if ( id>=range4 && id < range1)
+				return peer.fingerTable.getPreTableElement(3);
+		}
+		
+		
+		return -1;
+	}
+	
+	int findSuc(int id){
+		int localId=peer.getId();
+		
+		int range1=(localId+1)%16;
+		int range2=(localId+2)%16;
+		int range3=(localId+4)%16;
+		int range4=(localId+12)%16;
+		
+		if (range1 > range2)
+		{
+			if ( id >= range1 || id < range2)
+				return peer.fingerTable.getPreTableElement(0);
+		}
+		else
+		{
+			if ( id>=range1 && id < range2)
+				return peer.fingerTable.getPreTableElement(0);
+		}
+		
+		
+		if (range2 > range3)
+		{
+			if ( id >= range2 || id < range3)
+				return peer.fingerTable.getPreTableElement(1);
+		}
+		else
+		{
+			if ( id>=range2 && id < range3)
+				return peer.fingerTable.getPreTableElement(1);
+		}
+		
+		if (range3 > range4)
+		{
+			if ( id >= range3 || id < range4)
+				return peer.fingerTable.getPreTableElement(2);
+		}
+		else
+		{
+			if ( id>=range3 && id < range4)
+				return peer.fingerTable.getPreTableElement(2);
+		}
+		
+		if (range4 > range1)
+		{
+			if ( id >= range4 || id < range1)
+				return peer.fingerTable.getPreTableElement(3);
+		}
+		else
+		{
+			if ( id>=range4 && id < range1)
+				return peer.fingerTable.getPreTableElement(3);
+		}
+		
+		
+		return -1;
 	}
 	
 	/*ArrayList<Integer> setFingerTable(int id){
@@ -96,7 +229,10 @@ class RequestHandle extends Thread{
 			
 			int identifier=peer.getId();
 			
-			for (int i=0; i<4; i++){
+			//find successor of identifer+1, identifier+2,
+			//identifier+4, identifier+8           %16
+			
+			/*for (int i=0; i<4; i++){
 			    if (i!=3)
 			    {
 			    	if (joinId>=(identifier+Math.pow(2, i)%16) || joinId<(identifier+Math.pow(2, i+1))){
@@ -113,7 +249,7 @@ class RequestHandle extends Thread{
 			    }
 				
 			  //if ( ((peer.getId()+Math.pow(2, i))%16))	
-			}
+			}*/
 			//"from "+(identifier+Math.pow(2, i))%16+" to "+(identifier+Math.pow(2, i+1))%16
 			
 			

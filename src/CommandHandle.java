@@ -72,6 +72,8 @@ class CommandHandle{
 				cmdThread=new Join();
 			else if (cmd.startsWith("le"))
 				cmdThread=new Leave();
+			 
+				
 			else
 				{System.out.println("something bad happens");
 				 return;
@@ -91,6 +93,101 @@ class CommandHandle{
 	}
 	
 	
+	
+	/***
+	 * 
+	 * given a id, ask a host to resolve its successor
+	 * @throws IOException 
+	 *
+	 */
+	int findSuc(String dest_ip, int dest_port, int id) throws IOException{
+		Socket socket=null;
+		try {
+			socket = new Socket(dest_ip,dest_port);
+		} catch (UnknownHostException e) {
+			
+			e.printStackTrace();
+			System.out.println("the ip or dest_port is illegal");
+			return -1;
+		} catch (IOException e) {
+			System.out.println("socket set up error");
+			e.printStackTrace();
+			return -1;
+		}
+		
+		PrintWriter pw=getWriter(socket);
+		String cmd_send="findsuc "+id;
+		pw.write(cmd_send);  // send out find successor request
+		BufferedReader br=getReader(socket);
+		
+		int sucId=br.read();   
+		int remoteHostId=br.read();
+		String new_dest_ip=br.readLine();
+		int new_dest_port=br.read();
+		
+		socket.close();
+		
+		if (sucId<8000){
+			System.out.println("error in find successor");
+			return -1;
+		}
+		
+		if (sucId==remoteHostId){  // find the right predecessor
+			System.out.println("pre is "+sucId);
+			return sucId;}
+		else
+		{
+			return findSuc(new_dest_ip, new_dest_port, id);
+			}
+		
+		
+	}
+	
+	
+	int findPre(String dest_ip, int dest_port, int id) throws Exception{
+		Socket socket=null;
+		try {
+			socket = new Socket(dest_ip,dest_port);
+		} catch (UnknownHostException e) {
+			
+			e.printStackTrace();
+			System.out.println("the ip or dest_port is illegal");
+			return -1;
+		} catch (IOException e) {
+			System.out.println("socket set up error");
+			e.printStackTrace();
+			return -1;
+		}
+		
+		PrintWriter pw=getWriter(socket);
+		String cmd_send="findpre "+id;
+		pw.write(cmd_send);  // send out find successor request
+		BufferedReader br=getReader(socket);
+		
+		int preId=br.read();   
+		int remoteHostId=br.read();
+		String new_dest_ip=br.readLine();
+		int new_dest_port=br.read();
+		
+		socket.close();
+		
+		if (preId<8000){
+			System.out.println("error in find predecessor");
+			return -1;
+		}
+		
+		if (preId==remoteHostId){  // find the right predecessor
+			System.out.println("pre is "+preId);
+			return preId;}
+		else
+		{
+			return findPre(new_dest_ip, new_dest_port, id);
+			}
+		
+		
+		
+	}	
+	
 	class Join extends Thread{
 		
 		String dest_ip;
@@ -108,27 +205,21 @@ class CommandHandle{
 			dest_port=port;
 		}
 		
+		
+		
 		@Override
 		public void run(){
-			Socket socket=null;
+			
 			try {
-				socket = new Socket(dest_ip,dest_port);
-			} catch (UnknownHostException e) {
+				int pre=findPre(dest_ip, dest_port, peer.getId());
+				int suc=findSuc(dest_ip, dest_port, peer.getId());
+				System.out.println("pre: "+pre+"  suc: "+suc);
 				
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				System.out.println("nnd");
 				e.printStackTrace();
-				System.out.println("the ip or dest_port is illegal");
-				return;
-			} catch (IOException e) {
-				System.out.println("socket set up error");
-				e.printStackTrace();
-				return;
 			}
-			
-			PrintWriter pw=getWriter(socket);
-			String cmd_send="join "+peer.getId();
-			pw.write(cmd_send);  // send out join request
-			BufferedReader br=getReader(socket);
-			
 			
 		}
 		
