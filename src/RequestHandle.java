@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 /***
@@ -12,8 +13,6 @@ import java.util.ArrayList;
  * handle each request
  *
  */
-
-
 class RequestHandle extends Thread{
 	Socket socket;
 	Peer peer;
@@ -45,6 +44,25 @@ class RequestHandle extends Thread{
 		PrintWriter pw=new PrintWriter(socketOut,true);
 		return pw;
 	}
+	
+	
+	public PrintWriter getWriter(Socket socket){
+		OutputStream socketOut=null;
+		try {
+			socketOut=socket.getOutputStream();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			System.out.println("get writer error");
+			
+			e.printStackTrace();
+			return null;
+		}
+		PrintWriter pw=new PrintWriter(socketOut,true);
+		return pw;
+	}
+	
+	
+	
 	public RequestHandle(Socket socket, Peer peer){
 		this.socket=socket;
 		this.peer=peer;
@@ -53,9 +71,14 @@ class RequestHandle extends Thread{
 	@Override
 	public void run(){
 		//InputStream in=new InputStream(socket.getInputStream());
+	
 		BufferedReader br=getReader();
+		
+		//System.out.println("server: "+0);
 		String cmd_rec="";
+		
 		try {
+			//System.out.println("server: "+1);
 			cmd_rec=br.readLine();
 		} catch (IOException e) {
 			System.out.println("receive command error");
@@ -63,24 +86,48 @@ class RequestHandle extends Thread{
 			return;
 		}
 		
+		
 	    System.out.println("cmd_rec is "+cmd_rec);
 	    
 	    String []str=cmd_rec.split(" ");
 	    //int requested_id=Integer.parseInt(str[1]);
 	    Thread thread=null;
-	    if (str[0].equals("join"))
-	    	thread=new JoinHandle(Integer.parseInt(str[1]));
+	    if (str[0].equals("joinMsg"))
+	    	{
+	    	JoinHandle joinHandle=new JoinHandle(Integer.parseInt(str[1]));
+	    	try {
+				joinHandle.processMsg();
+			} catch (UnknownHostException e) {
+				System.out.println("process join msg error");
+				e.printStackTrace();
+			} catch (IOException e) {
+				System.out.println("process join msg error");
+				e.printStackTrace();
+			}
+	    	return;
+	    	}
 	    
 	    else if (str[0].equals("findpre"))
-    	{int preId=findPre(Integer.parseInt(str[1]));		
+    	{int preId=findPre(Integer.parseInt(str[1]));
+    	   // System.out.println("server: "+1);
 	    	PrintWriter pw=getWriter();
-	    	pw.print(preId);
-	    	pw.print(peer.getId());
-	    	pw.print("localhost");
-	    	pw.print(preId+8000);
+	    	pw.println(preId);
+	    	//System.out.println("server: "+2);
+	    	pw.println(peer.getId());
+	    	//System.out.println("server: "+3);
+	    	pw.println("localhost");
+	    	//System.out.println("server: "+4);
+	    	int preIdPort=preId+8000;
+	    	pw.println(preId);
+	    	
 	    }
 	    else if (str[0].equals("findsuc")){
-	     int sucId=findSuc(Integer.parseInt(str[1]));	
+	    	PrintWriter pw=getWriter();
+	    	int sucId=findSuc(Integer.parseInt(str[1]));
+	    	pw.println(sucId);
+	    	pw.println(peer.getId());
+	    	pw.println("localhost");
+	    	pw.println(sucId);
 	    }
 	    else if (str[0].equals("")){
 	    	
@@ -212,17 +259,33 @@ class RequestHandle extends Thread{
 		
 	}*/
 	
-	class JoinHandle extends Thread{
+	/**
+	 * 
+	 * @author jordan
+	 *
+	 */
+	class JoinHandle {
 		int joinId;
+		
 		JoinHandle( int joinId){
 			this.joinId=joinId;
 		}
-		@Override
-		public void run(){
-			//update own table, notify its successor, transfer responsibility of file
-				
-			
+		
+		public void processMsg() throws UnknownHostException, IOException{
+			// the join msg has circulated the whole ring
+			if (joinId==peer.getId())
+			{   System.out.println("Node "+joinId+" join successfully");
+				return;
+			}
+			peer.fingerTable.preId=joinId;
+			updateTable();
+			Socket socket=new Socket(Peer.DEFAULT_DEST_IP,peer.fingerTable.preId+8000);
+			PrintWriter pw=getWriter(socket);
+			//forward the msg to successor
+			pw.println("joinMsg "+joinId);
+			socket.close();
 		}
+		
 		
 		void updateTable()
 		{
@@ -258,6 +321,15 @@ class RequestHandle extends Thread{
 		
 	}
 	
+	/***
+	 * 
+	 * @author jordan
+	 *
+	 */
+	class GetHandle{
+		
+		
+	}
 	
 	class LeaveHandle extends Thread{
 		

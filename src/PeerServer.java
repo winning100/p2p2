@@ -55,6 +55,7 @@ class PeerServer extends Thread{
 		serverSocket=new ServerSocket(serverPort);
 		while (true){
 		socket=serverSocket.accept();
+		System.out.println("receive request");
 		Thread requestHandle=new RequestHandle(socket,peer);
 		requestHandle.start();
 		

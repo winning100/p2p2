@@ -173,9 +173,11 @@ class FingerTable{
 	
 	public void display(){
 		int k=0;
+		System.out.println(getId()+"'s fingerTable");
+		System.out.println("successor: "+sucId+" predecessor: "+preId);
 		for (int i=0; i<tableSize; i++){
-			System.out.println("successor: "+sucId+" predecessor: "+preId);
-			System.out.println(i+"   "+"from "+(identifier+Math.pow(2, i))%16+" to "+(identifier+Math.pow(2, i+1))%16+"  "+sucTable.get(i));
+			
+			System.out.println(i+"   "+"from "+(identifier+Math.pow(2, i))%16+" to "+(identifier+Math.pow(2, i+1))%16+"  "+sucTable.get(i)+"   "+preTable.get(i));
 			//k=(int) Math.pow(2, i);
 		}
 	}

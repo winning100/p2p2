@@ -15,16 +15,30 @@ public static void main(String []args){
 	//int nodeId=Integer.parseInt(args[1]);
 	//int serverPort=Integer.parseInt(args[2]);
 	
-	int nodeId=0;
-	int serverPort=8000+0;
-    	
+	Scanner scanner=new Scanner(System.in);
+	
+	System.out.println("input node:");
+	int nodeId=Integer.parseInt(scanner.nextLine());
+	
+	
+	//int nodeId=5;
+	int serverPort=8000+nodeId;
+	
 	PeerServer peerServer=new PeerServer(serverPort,nodeId);
 	System.out.println("start the server, port: "+serverPort+"  nodeId: "+nodeId);
 	peerServer.start();
-	Scanner scanner=new Scanner(System.in);
-	while (true){
+	
+	while (scanner.hasNextLine()){
+		//System.out.println("before read");
 		String cmd=scanner.nextLine();
+		//System.out.println("after read");
 		CommandHandle commandHandle=new CommandHandle(cmd,peerServer.peer);
+		try {
+			commandHandle.handle();
+		} catch (Exception e) {
+			System.out.println("cmd execute error: "+cmd);
+			e.printStackTrace();
+		}
 		
 		
 	}
