@@ -10,7 +10,7 @@ class PeerServer extends Thread{
 	Socket socket;
 	Peer peer;
 	
-	public PeerServer(int serverPort, int nodeId){
+	public PeerServer(int serverPort, int nodeId) throws Exception{
 		this.serverPort=serverPort;
 		this.nodeId=nodeId;
 		peer=new Peer(this.serverPort,this.nodeId);

@@ -140,10 +140,15 @@ class CommandHandle extends Thread{
 		 * @throws IOException 
 		 * @throws UnknownHostException 
 		 * 
+		 * return address and nodeId of suc
 		 */	
-		int findSuc(int localId) throws UnknownHostException, IOException{
-			int pre=findPre( localId);
-			return findSuc(Peer.DEFAULT_DEST_IP,8000+pre);
+		String findSuc(int localId) throws UnknownHostException, IOException{
+			String preString=findPre(localId);
+			String []k=preString.split(" ");
+			String preIp=k[0];
+			int port=Integer.parseInt(k[1]);
+			int pre=Integer.parseInt(k[2]);
+			return findSuc(preIp,port);
 		}
 		
 		/**
@@ -153,17 +158,18 @@ class CommandHandle extends Thread{
 		 * @return
 		 * @throws IOException 
 		 * @throws UnknownHostException 
+		 * 
+		 * return address and nodeId of suc
 		 */
-		int findSuc(String ip, int port) throws UnknownHostException, IOException{
+		String findSuc(String ip, int port) throws UnknownHostException, IOException{
 			
 			Socket socket=new Socket(ip,port);
 			PrintWriter pw=RequestHandle.getWriter(socket);
 			String cmd="yoursuc";
 			pw.println(cmd);
 			BufferedReader br=RequestHandle.getReader(socket);
-			int suc=Integer.parseInt(br.readLine());
-			
-			socket.close();
+			String suc=br.readLine();
+			System.out.println("+++in findsuc +++ : "+suc);
 			return suc;
 			
 			
@@ -176,36 +182,64 @@ class CommandHandle extends Thread{
 		 * @throws IOException 
 		 * @throws UnknownHostException 
 		 */
-		int findPre(int localId) throws UnknownHostException, IOException{
+		String findPre(int localId) throws UnknownHostException, IOException{
 			System.out.println("+++++++++in findPre++++++");
 			//int localId=peer.getId();
-			int remoteSuc=findSuc(Peer.DEFAULT_DEST_IP,Peer.DEFAULT_DEST_PORT);
+			String remoteSucString=findSuc(Peer.DEFAULT_DEST_IP,Peer.DEFAULT_DEST_PORT);
+			String []str=remoteSucString.split(" ");
+			String remoteIp=str[0];
+			int remotePort=Integer.parseInt(str[1]);
+			int remoteSuc=Integer.parseInt(str[2]);
+			
+			String remoteNodeIp=Peer.DEFAULT_DEST_IP;
+			
+			int remoteNodePort=Peer.DEFAULT_DEST_PORT;
+			
 			System.out.println("the default suc is "+remoteSuc);
 			int remoteNodeId=0;
 			while(true){
 			if (RequestHandle.inRange(localId,remoteNodeId,remoteSuc,true,false))
 			{   System.out.println(localId+"  in range from "+remoteNodeId+" to "+remoteSuc);
 				//peer.fingerTable.preId=remoteNodeId;
-				return remoteNodeId;
+			    System.out.println("return in pre: "+remoteNodeIp+" "+remoteNodePort+" "+remoteNodeId);
+				return remoteNodeIp+" "+remoteNodePort+" "+remoteNodeId;
 			}
 			System.out.println(localId+" not in range from "+remoteNodeId+" to "+remoteSuc);
 			
-			remoteNodeId=findClosestPrecedingFinger(localId,remoteNodeId);
+			//remoteNodeId=findClosestPrecedingFinger(localId,remoteIp,remotePort);
+			String remoteNodeIdString=findClosestPrecedingFinger(localId,remoteIp,remotePort);
+			String []k=remoteNodeIdString.split(" ");
+			remoteNodeIp=k[0];
+			remoteNodePort=Integer.parseInt(k[1]);
+			remoteNodeId=Integer.parseInt(k[2]);
+			
 			System.out.println("next requestedNodeId "+remoteNodeId);
-			remoteSuc=findSuc(Peer.DEFAULT_DEST_IP,8000+remoteNodeId);
+			remoteSucString=findSuc(remoteIp,remotePort);
+			remoteIp=str[0];
+			remotePort=Integer.parseInt(str[1]);
+			remoteSuc=Integer.parseInt(str[2]);
 			}
 		}
 		
 		
-		
-		int findClosestPrecedingFinger(int id, int requestNodeId) throws UnknownHostException, IOException{
+		/***
+		 * ip + port + id
+		 * @param id
+		 * @param remoteIp
+		 * @param remotePort
+		 * @return
+		 * @throws UnknownHostException
+		 * @throws IOException
+		 */
+		String findClosestPrecedingFinger(int id, String remoteIp, int remotePort) throws UnknownHostException, IOException{
 			
-			Socket socket=new Socket(Peer.DEFAULT_DEST_IP,8000+requestNodeId);
+			Socket socket=new Socket(remoteIp,remotePort);
 			PrintWriter pw=getWriter(socket);
 			String cmd="closestprecedingfinger "+id;
 			pw.println(cmd);
-			
-			return Integer.parseInt(getReader(socket).readLine());
+			String str=getReader(socket).readLine();
+			//String []str1=str.split(" ");
+			return str;
 			
 			
 		}
@@ -223,26 +257,65 @@ class CommandHandle extends Thread{
 		}
 		
 		//use an arbitrary node to initiate the local table
-		void init_finger_table(String ip, int port, int remoteId) throws UnknownHostException, IOException{
-			int pre=findPre(peer.getId());
-			int suc=findSuc(peer.getId());
-			peer.fingerTable.sucId=suc;  //get the correct suc and pre
+		void init_finger_table(String ip1, int port1, int remoteId123) throws UnknownHostException, IOException{
+			String preString=findPre(peer.getId());
+			String []preS=preString.split(" ");
+			String preIp=preS[0];
+			int prePort=Integer.parseInt(preS[1]);
+			int pre=Integer.parseInt(preS[2]);
+			
+			String sucString=findSuc(peer.getId());
+			String []sucS=sucString.split(" ");
+			String sucIp=sucS[0];
+			int sucPort=Integer.parseInt(sucS[1]);
+			int suc=Integer.parseInt(sucS[2]);
+			
+			System.out.println("preString:"+preString);
+			System.out.println("sucString:"+sucString);
+			//int pre=findPre(peer.getId());
+			//int suc=findSuc(peer.getId());
+			  //get the correct suc and pre
+			peer.fingerTable.sucId=suc;
+			peer.fingerTable.sucIP=sucIp;
+			peer.fingerTable.sucPort=sucPort;
+			
+			peer.fingerTable.preIP=preIp;
+			peer.fingerTable.prePort=prePort;
 			peer.fingerTable.preId=pre;
+			
 			peer.fingerTable.sucTable.set(0, suc);
+			peer.fingerTable.ipTable.set(0, sucIp+" "+sucPort);
 			for(int i=1;i<4;i++){
-				suc=findSuc((int) ((peer.getId()+Math.pow(2, i))%16));
+				System.out.println("++++++in for +++++"+"  "+i);
+				
+				sucString=findSuc((int) ((peer.getId()+Math.pow(2, i))%16));
+				sucS=sucString.split(" ");
+				sucIp=sucS[0];
+				sucPort=Integer.parseInt(sucS[1]);
+				suc=Integer.parseInt(sucS[2]);
+				
 				int k=(int) ((peer.getId()+Math.pow(2, i))%16);
 				if (RequestHandle.inRange(k,pre,peer.getId(),true,false))
-					suc=peer.getId();
+					{suc=peer.getId();
+					 sucIp=peer.fingerTable.ip;
+					 sucPort=peer.fingerTable.port;
+					}
 				peer.fingerTable.sucTable.set(i, suc);
+				peer.fingerTable.ipTable.set(i, sucIp+" "+sucPort);
 			}
 			
 		}
 		void update_others() throws UnknownHostException, IOException {
 			int localId=peer.getId();
+			String localIp=peer.fingerTable.ip;
+			int localport=peer.fingerTable.port;
+			
 			int suc=peer.fingerTable.sucId;
-			String cmd="new_node "+localId;
-			Socket socket=new Socket(Peer.DEFAULT_DEST_IP, 8000+suc);
+			String sucIp=peer.fingerTable.sucIP;
+			int sucPort=peer.fingerTable.sucPort;
+			
+			String cmd="new_node "+localIp+" "+localport+" "+localId;
+			Socket socket=new Socket(sucIp, sucPort);
 			PrintWriter pw=getWriter(socket);
 			pw.println(cmd);
 			socket.close();
@@ -256,24 +329,26 @@ class CommandHandle extends Thread{
 				update_node_finger_table(p,i);
 			}*/
 		}
-		void update_node_finger_table(int nodeId,int rank) throws UnknownHostException, IOException{
-			Socket socket=new Socket(Peer.DEFAULT_DEST_IP, 8000+nodeId);
-			PrintWriter pw=getWriter(socket);
-			String cmd="update_node_finger_table "+peer.getId()+" "+rank;
-			pw.println(cmd);
-			
-		}
+		
 		void update_neighbour() throws UnknownHostException, IOException{
+			
 			int suc=peer.fingerTable.sucId;
+			String sucIp=peer.fingerTable.sucIP;
+			int sucPort=peer.fingerTable.sucPort;
+			
 			int pre=peer.fingerTable.preId;
-			String cmd="newSuc "+peer.getId();
-			Socket socket=new Socket(Peer.DEFAULT_DEST_IP,8000+pre);
+			String preIp=peer.fingerTable.preIP;
+			int prePort=peer.fingerTable.prePort;
+			
+			String cmd="newSuc "+peer.fingerTable.ip+" "+peer.fingerTable.port+" "+peer.getId();
+			Socket socket=new Socket(preIp,prePort);
 			PrintWriter pw=RequestHandle.getWriter(socket);
 			pw.println(cmd);
 			socket.close();
-			socket=new Socket(Peer.DEFAULT_DEST_IP, 8000+suc);
+			
+			socket=new Socket(sucIp, sucPort);
 			pw=RequestHandle.getWriter(socket);
-			cmd="newPre "+peer.getId();
+			cmd="newPre "+peer.fingerTable.ip+" "+peer.fingerTable.port+" "+peer.getId();
 			pw.println(cmd);
 			socket.close();
 		}

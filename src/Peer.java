@@ -31,11 +31,12 @@ FingerTable fingerTable;
 /**
  * 
  * @param initPort
+ * @throws Exception 
  * @throws IOException
  * the exception has to be captured and prompt user to input another port number
  * 
  */
-Peer (int initPort, int identifier) {
+Peer (int initPort, int identifier) throws Exception {
 
 	port=initPort;
 	this.identifier=identifier;
@@ -70,7 +71,7 @@ public int getId(){
  * @return
  * @throws SocketException
  */
-/*public String getLocalIp() throws SocketException
+public static String getLocalIp() throws SocketException
 
 {	Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
 
@@ -88,13 +89,16 @@ public int getId(){
 }
     return "-1";
 
-}*/
+}
 
 
 class FingerTable{
 	
 	int identifier;
 	int tableSize;
+	
+	String ip;
+	int port;
 	
 	int preId;
 	int sucId;
@@ -106,20 +110,27 @@ class FingerTable{
 	int sucPort;
 	
 	ArrayList <Integer> sucTable;    // store successor's Node Id
+	ArrayList <String>  ipTable;
 	//ArrayList<Integer> preTable;
 	Map<String, Boolean> keyList;
 	Map<Integer,String> nodeIpMap; //convert nodeId to ip address.
 	
-	public FingerTable(int identifier, int tableSize){
+	public FingerTable(int identifier, int tableSize) throws Exception{
 		this.identifier=identifier;
 		this.tableSize=tableSize;
 		sucTable=new ArrayList<Integer>();
+		ipTable=new ArrayList<String>();
+		port=8000+identifier;
+		ip=getLocalIp();
 		//preTable=new ArrayList<Integer>();
 		keyList=new HashMap<String, Boolean>();
 		//nodeIpMap=new HashMap<Integer,String>();
 		init();
 	}
 	
+	public String getIp(int i){
+		return ipTable.get(i);
+	}
 	public int getSucTableElement(int i){
 		return sucTable.get(i);
 	}
@@ -133,12 +144,7 @@ class FingerTable{
 	 * @param i
 	 * @return something like 192.168.1.3:8000
 	 */
-	public String getIp(int i){   
-		if (nodeIpMap.containsKey(i))
-			return nodeIpMap.get(i);
-		
-		return null;
-	}
+	
 	
 	public void init(){
 		//succ_succ=0;
@@ -147,14 +153,22 @@ class FingerTable{
 				
 		for (int i=0; i<tableSize; i++)  //init finger table
 		{	sucTable.add(0); 
-			//preTable.add(0);
+		    ipTable.add(" ");
+			
 			}
 		
 		
 		if (identifier==0)       // node 0 has to be the first node and owns all the files at the beginning
 		{
+			for (int i=0; i<tableSize; i++){
+				ipTable.set(i, ip+" "+port);
+			}
 			sucId=0;
 			preId=0;
+			sucIP=ip;
+			preIP=ip;
+			sucPort=Peer.DEFAULT_DEST_PORT;
+			prePort=Peer.DEFAULT_DEST_PORT;
 		 for (int i=0; i<16; i++)   // all the files contained in node 0 at first.
 			keyList.put(String.valueOf(i), true);
 	    }
@@ -183,10 +197,10 @@ class FingerTable{
 	public void display(){
 		int k=0;
 		System.out.println(getId()+"'s fingerTable");
-		System.out.println("successor: "+sucId+" predecessor: "+preId);
+		System.out.println("successor: "+sucId+" "+sucIP+" "+sucPort+" predecessor: "+preId+" "+preIP+" "+prePort);
 		for (int i=0; i<tableSize; i++){
 			
-			System.out.println(i+"   "+"from "+(identifier+Math.pow(2, i))%16+" to "+(identifier+Math.pow(2, i+1))%16+"  "+sucTable.get(i));
+			System.out.println(i+"   "+"from "+(identifier+Math.pow(2, i))%16+" to "+(identifier+Math.pow(2, i+1))%16+"  "+sucTable.get(i)+"  "+ipTable.get(i));
 			//k=(int) Math.pow(2, i);
 		}
 	}
