@@ -22,6 +22,7 @@ public static Map<Integer,Integer> idToPort;
 
 public static String DEFAULT_DEST_IP="localhost";
 public static int DEFAULT_DEST_PORT=8000;
+public static String FILE_DIRECTORY="file/";
 
 
 FingerTable fingerTable;
@@ -69,7 +70,7 @@ public int getId(){
  * @return
  * @throws SocketException
  */
-public String getLocalIp() throws SocketException
+/*public String getLocalIp() throws SocketException
 
 {	Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
 
@@ -87,17 +88,25 @@ public String getLocalIp() throws SocketException
 }
     return "-1";
 
-}
+}*/
 
 
 class FingerTable{
 	
 	int identifier;
 	int tableSize;
+	
 	int preId;
 	int sucId;
+	
+	String preIP;
+	int prePort;
+	
+	String sucIP;
+	int sucPort;
+	
 	ArrayList <Integer> sucTable;    // store successor's Node Id
-	ArrayList<Integer> preTable;
+	//ArrayList<Integer> preTable;
 	Map<String, Boolean> keyList;
 	Map<Integer,String> nodeIpMap; //convert nodeId to ip address.
 	
@@ -105,7 +114,7 @@ class FingerTable{
 		this.identifier=identifier;
 		this.tableSize=tableSize;
 		sucTable=new ArrayList<Integer>();
-		preTable=new ArrayList<Integer>();
+		//preTable=new ArrayList<Integer>();
 		keyList=new HashMap<String, Boolean>();
 		//nodeIpMap=new HashMap<Integer,String>();
 		init();
@@ -115,9 +124,9 @@ class FingerTable{
 		return sucTable.get(i);
 	}
 	
-	public int getPreTableElement(int i){
+	/*public int getPreTableElement(int i){
 		return preTable.get(i);
-	}
+	}*/
 	
 	/**
 	 * 
@@ -138,7 +147,7 @@ class FingerTable{
 				
 		for (int i=0; i<tableSize; i++)  //init finger table
 		{	sucTable.add(0); 
-			preTable.add(0);
+			//preTable.add(0);
 			}
 		
 		
@@ -165,7 +174,7 @@ class FingerTable{
 		
 	}
 	
-	int getSuccessorId(int id){
+	int getSuccessorId(){
 		
 		return sucId;
 		
@@ -177,7 +186,7 @@ class FingerTable{
 		System.out.println("successor: "+sucId+" predecessor: "+preId);
 		for (int i=0; i<tableSize; i++){
 			
-			System.out.println(i+"   "+"from "+(identifier+Math.pow(2, i))%16+" to "+(identifier+Math.pow(2, i+1))%16+"  "+sucTable.get(i)+"   "+preTable.get(i));
+			System.out.println(i+"   "+"from "+(identifier+Math.pow(2, i))%16+" to "+(identifier+Math.pow(2, i+1))%16+"  "+sucTable.get(i));
 			//k=(int) Math.pow(2, i);
 		}
 	}

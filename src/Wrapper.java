@@ -34,7 +34,7 @@ public static void main(String []args){
 		//System.out.println("after read");
 		CommandHandle commandHandle=new CommandHandle(cmd,peerServer.peer);
 		try {
-			commandHandle.handle();
+			commandHandle.start();
 		} catch (Exception e) {
 			System.out.println("cmd execute error: "+cmd);
 			e.printStackTrace();

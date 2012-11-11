@@ -7,7 +7,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-class CommandHandle{
+class CommandHandle extends Thread{
 	String cmd;
 	
 	String []cmdList={"search", "join","le","ls","get","pre"};
@@ -18,7 +18,15 @@ class CommandHandle{
 		this.peer=peer;
 	}
 	
-	
+	@Override
+	public void run(){
+		try {
+			handle();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
 	public BufferedReader getReader(Socket socket){
 		InputStream socketIn=null;
@@ -71,47 +79,31 @@ class CommandHandle{
 				ls.list();
 				}
 			else if (cmd.startsWith("search"))
-				{cmdThread=new Search();
+				{
 				 
 				}
 			else if (cmd.startsWith("join"))
-				{cmdThread=new Join();
-				 cmdThread.start();}
+				{Join join=new Join(Peer.DEFAULT_DEST_IP,Peer.DEFAULT_DEST_PORT);
+				 join.startJoin();
+				
+				}
 			else if (cmd.startsWith("le"))
-				{cmdThread=new Leave();
-				 cmdThread.start();
+				{
 				 }
 			else if (cmd.startsWith("findpre"))
-			{   System.out.println("process findpre ");
-				
-				int preId=findPre(Peer.DEFAULT_DEST_IP,Peer.DEFAULT_DEST_PORT,peer.getId());
-				System.out.println("preId should be "+preId);
-			/*try {
-					
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}*/
+			{  
 			}
 			else if (cmd.startsWith("findsuc"))	
 			{
-				int sucId=findSuc(Peer.DEFAULT_DEST_IP,Peer.DEFAULT_DEST_PORT,peer.getId());
-				System.out.println("the suc is "+sucId);
-				/*try {
-					int sucId=findSuc(Peer.DEFAULT_DEST_IP,Peer.DEFAULT_DEST_PORT,peer.getId());
-					//System.out.println("sucId should be "+sucId);
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}*/
+				
 			}	
 			else
 				{System.out.println("something bad happens");
 				 return;
 				}
-			cmdThread=new Thread();
+			//cmdThread=new Thread();
 			//System.out.println("begin to handle cmd: "+cmd);
-			cmdThread.start();
+			//cmdThread.start();
 		}
 		
 	}
@@ -124,115 +116,9 @@ class CommandHandle{
 	}
 	
 	
+
 	
-	/***
-	 * 
-	 * given a id, ask a host to resolve its successor
-	 * @throws IOException 
-	 *
-	 */
-	int findSuc(String dest_ip, int dest_port, int id) throws IOException{
-		Socket socket=null;
-		try {
-			socket = new Socket(dest_ip,dest_port);
-		} catch (UnknownHostException e) {
-			
-			e.printStackTrace();
-			System.out.println("the ip or dest_port is illegal");
-			return -1;
-		} catch (IOException e) {
-			System.out.println("socket set up error");
-			e.printStackTrace();
-			return -1;
-		}
-		
-		PrintWriter pw=getWriter(socket);
-		String cmd_send="findsuc "+id;
-		pw.println(cmd_send);  // send out find successor request
-		BufferedReader br=getReader(socket);
-		
-		int sucId=Integer.parseInt(br.readLine());   
-		int remoteHostId=Integer.parseInt(br.readLine());
-		String new_dest_ip=br.readLine();
-		int new_dest_port=Integer.parseInt(br.readLine());
-		
-		socket.close();
-		
-		if (sucId+8000<8000){
-			System.out.println("error in find successor");
-			return -1;
-		}
-		
-		if (sucId==remoteHostId){  // find the right predecessor
-			System.out.println("suc is "+sucId);
-			return sucId;}
-		else
-		{
-			return findSuc(new_dest_ip, new_dest_port, id);
-			}
-		
-		
-	}
-	
-	
-	int findPre(String dest_ip, int dest_port, int id) throws Exception{
-		
-		System.out.println("in the find pre");
-		
-		Socket socket=null;
-		try {
-			socket = new Socket(dest_ip,dest_port);
-		} catch (UnknownHostException e) {
-			
-			e.printStackTrace();
-			System.out.println("the ip or dest_port is illegal");
-			return -1;
-		} catch (IOException e) {
-			System.out.println("socket set up error");
-			e.printStackTrace();
-			return -1;
-		}
-		
-		PrintWriter pw=getWriter(socket);
-		//OutputStream output=socket.getOutputStream();
-		String cmd_send="findpre "+id;
-		//output.write(cmd_send.getBytes());  // send out find successor request
-		pw.println(cmd_send);
-		//pw.flush();
-		System.out.println("cmd_send is "+cmd_send);
-		BufferedReader br=getReader(socket);
-		
-		int preId=Integer.parseInt(br.readLine());   
-		//System.out.println(1);
-		int remoteHostId=Integer.parseInt(br.readLine());
-		//System.out.println(2);
-		String new_dest_ip=br.readLine();
-		//System.out.println(3);
-		int new_dest_port=Integer.parseInt(br.readLine());
-		System.out.println("receicve something ");
-		
-		System.out.println("preid: "+preId);
-		System.out.println("remoteHost id "+remoteHostId);
-		socket.close();
-		
-		if (preId+8000<8000){
-			System.out.println("error in find predecessor");
-			return -1;
-		}
-		
-		if (preId==remoteHostId){  // find the right predecessor
-			System.out.println("pre is "+preId);
-			return preId;}
-		else
-		{
-			return findPre(new_dest_ip, new_dest_port, id);
-			}
-		
-		
-		
-	}	
-	
-	class Join extends Thread{
+	class Join {
 		
 		String dest_ip;
 		int dest_port;
@@ -249,77 +135,161 @@ class CommandHandle{
 			dest_port=port;
 		}
 		/**
-		 * tell successor one node has joined
+		 * 
+		 * when join network, it has to find suc
+		 * @throws IOException 
+		 * @throws UnknownHostException 
+		 * 
+		 */	
+		int findSuc(int localId) throws UnknownHostException, IOException{
+			int pre=findPre( localId);
+			return findSuc(Peer.DEFAULT_DEST_IP,8000+pre);
+		}
+		
+		/**
+		 * request suc of a given host
+		 * @param ip
+		 * @param port
+		 * @return
+		 * @throws IOException 
+		 * @throws UnknownHostException 
+		 */
+		int findSuc(String ip, int port) throws UnknownHostException, IOException{
+			
+			Socket socket=new Socket(ip,port);
+			PrintWriter pw=RequestHandle.getWriter(socket);
+			String cmd="yoursuc";
+			pw.println(cmd);
+			BufferedReader br=RequestHandle.getReader(socket);
+			int suc=Integer.parseInt(br.readLine());
+			
+			socket.close();
+			return suc;
+			
+			
+		}
+		
+		/**
+		 * try to find its own pre in network
+		 * @param id
+		 * @return
+		 * @throws IOException 
+		 * @throws UnknownHostException 
+		 */
+		int findPre(int localId) throws UnknownHostException, IOException{
+			System.out.println("+++++++++in findPre++++++");
+			//int localId=peer.getId();
+			int remoteSuc=findSuc(Peer.DEFAULT_DEST_IP,Peer.DEFAULT_DEST_PORT);
+			System.out.println("the default suc is "+remoteSuc);
+			int remoteNodeId=0;
+			while(true){
+			if (RequestHandle.inRange(localId,remoteNodeId,remoteSuc,true,false))
+			{   System.out.println(localId+"  in range from "+remoteNodeId+" to "+remoteSuc);
+				//peer.fingerTable.preId=remoteNodeId;
+				return remoteNodeId;
+			}
+			System.out.println(localId+" not in range from "+remoteNodeId+" to "+remoteSuc);
+			
+			remoteNodeId=findClosestPrecedingFinger(localId,remoteNodeId);
+			System.out.println("next requestedNodeId "+remoteNodeId);
+			remoteSuc=findSuc(Peer.DEFAULT_DEST_IP,8000+remoteNodeId);
+			}
+		}
+		
+		
+		
+		int findClosestPrecedingFinger(int id, int requestNodeId) throws UnknownHostException, IOException{
+			
+			Socket socket=new Socket(Peer.DEFAULT_DEST_IP,8000+requestNodeId);
+			PrintWriter pw=getWriter(socket);
+			String cmd="closestprecedingfinger "+id;
+			pw.println(cmd);
+			
+			return Integer.parseInt(getReader(socket).readLine());
+			
+			
+		}
+		/**
+		 * the entrance to join the network
 		 * @throws UnknownHostException
 		 * @throws IOException
 		 */
-		void sendJoinMsg() throws UnknownHostException, IOException{
-			String joinMsg="joinMsg "+peer.getId();
-			String ip=dest_ip;
-			int port=peer.fingerTable.sucId;
-			
-			Socket socket=null;
-			socket=new Socket(ip, port+8000);
-			
-			PrintWriter pw=getWriter(socket);
-			//BufferedReader br=getReader(socket);
-			
-			pw.println(joinMsg);
-			socket.close();
-			
+		public void startJoin() throws UnknownHostException, IOException{
+		
+			init_finger_table("123",888,0);
+			update_neighbour();
+			update_others();
+			transfer_keys();
 		}
 		
-		void setFingerTable() throws Exception{
-			int suc=findSuc(dest_ip,dest_port,peer.getId());
-			int pre=findPre(dest_ip,dest_port,peer.getId());
+		//use an arbitrary node to initiate the local table
+		void init_finger_table(String ip, int port, int remoteId) throws UnknownHostException, IOException{
+			int pre=findPre(peer.getId());
+			int suc=findSuc(peer.getId());
+			peer.fingerTable.sucId=suc;  //get the correct suc and pre
 			peer.fingerTable.preId=pre;
-			peer.fingerTable.sucId=suc;
-			for (int i=0; i<4; i++){
-				suc=findSuc(dest_ip,dest_port,(int) (peer.getId()+Math.pow(2, i)));
-				pre=findPre(dest_ip,dest_port,(int) (peer.getId()+Math.pow(2, i)));
-				peer.fingerTable.preTable.set(i, pre);
+			peer.fingerTable.sucTable.set(0, suc);
+			for(int i=1;i<4;i++){
+				suc=findSuc((int) ((peer.getId()+Math.pow(2, i))%16));
+				int k=(int) ((peer.getId()+Math.pow(2, i))%16);
+				if (RequestHandle.inRange(k,pre,peer.getId(),true,false))
+					suc=peer.getId();
 				peer.fingerTable.sucTable.set(i, suc);
 			}
+			
 		}
+		void update_others() throws UnknownHostException, IOException {
+			int localId=peer.getId();
+			int suc=peer.fingerTable.sucId;
+			String cmd="new_node "+localId;
+			Socket socket=new Socket(Peer.DEFAULT_DEST_IP, 8000+suc);
+			PrintWriter pw=getWriter(socket);
+			pw.println(cmd);
+			socket.close();
+			/*for (int i=0; i<4; i++){
+				int j=(int) (peer.getId()-Math.pow(2, i));
+				if (j<0)
+					j=j+16;
 		
-		@Override
-		public void run(){
-			
-			try {
-				setFingerTable();
-			} catch (Exception e) {
-				System.out.println("set fingertable error");
-				e.printStackTrace();
-			}
-			
-			peer.display();
-			/*try {
-				int pre=findPre(dest_ip, dest_port, peer.getId());
-				int suc=findSuc(dest_ip, dest_port, peer.getId());
-				System.out.println("pre: "+pre+"  suc: "+suc);
+				int p=findPre(j);
 				
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				System.out.println("nnd");
-				e.printStackTrace();
+				update_node_finger_table(p,i);
 			}*/
+		}
+		void update_node_finger_table(int nodeId,int rank) throws UnknownHostException, IOException{
+			Socket socket=new Socket(Peer.DEFAULT_DEST_IP, 8000+nodeId);
+			PrintWriter pw=getWriter(socket);
+			String cmd="update_node_finger_table "+peer.getId()+" "+rank;
+			pw.println(cmd);
 			
 		}
+		void update_neighbour() throws UnknownHostException, IOException{
+			int suc=peer.fingerTable.sucId;
+			int pre=peer.fingerTable.preId;
+			String cmd="newSuc "+peer.getId();
+			Socket socket=new Socket(Peer.DEFAULT_DEST_IP,8000+pre);
+			PrintWriter pw=RequestHandle.getWriter(socket);
+			pw.println(cmd);
+			socket.close();
+			socket=new Socket(Peer.DEFAULT_DEST_IP, 8000+suc);
+			pw=RequestHandle.getWriter(socket);
+			cmd="newPre "+peer.getId();
+			pw.println(cmd);
+			socket.close();
+		}
+		
+		void transfer_keys(){
+			
+		}
+	}
+	
+	class Leave{
 		
 	}
 	
-	class Leave extends Thread{
-		@Override
-		public void run(){
-			
-		}
-	}
-	
-	class Search extends Thread{
-		@Override
-		public void run(){
-			
-		}
+	class Search{
+		
+		
 	}
 	
 	class Get{
