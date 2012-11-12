@@ -24,6 +24,7 @@ public static String DEFAULT_DEST_IP="localhost";
 public static int DEFAULT_DEST_PORT=8000;
 public static String FILE_DIRECTORY="file/";
 
+public static int TTL=16;
 
 FingerTable fingerTable;
 //public static int PEER_SERVER_PORT
@@ -41,10 +42,10 @@ Peer (int initPort, int identifier) throws Exception {
 	port=initPort;
 	this.identifier=identifier;
 	fingerTable=new FingerTable(this.identifier,4);  //4 is the table size
-	idToPort=new HashMap<Integer,Integer>();
-	for (int i=0;i<16; i++){
-		idToPort.put(i, 9000+i);
-	}
+	//idToPort=new HashMap<Integer,Integer>();
+	//for (int i=0;i<16; i++){
+		//idToPort.put(i, 9000+i);
+	//}
 }
 
 
@@ -102,6 +103,8 @@ class FingerTable{
 	
 	int preId;
 	int sucId;
+	int prepreId;
+	int sucsucId;
 	
 	String preIP;
 	int prePort;
@@ -109,11 +112,19 @@ class FingerTable{
 	String sucIP;
 	int sucPort;
 	
+	String sucsucIP;
+	int sucsucPort;
+	
+	String prepreIP;
+	int preprePort;
+	
 	ArrayList <Integer> sucTable;    // store successor's Node Id
 	ArrayList <String>  ipTable;
-	//ArrayList<Integer> preTable;
-	Map<String, Boolean> keyList;
-	Map<Integer,String> nodeIpMap; //convert nodeId to ip address.
+	
+	//map key to data
+	Map<Integer, String> keyList;
+	
+	//Map<Integer,String> nodeIpMap; //convert nodeId to ip address.
 	
 	public FingerTable(int identifier, int tableSize) throws Exception{
 		this.identifier=identifier;
@@ -123,7 +134,7 @@ class FingerTable{
 		port=8000+identifier;
 		ip=getLocalIp();
 		//preTable=new ArrayList<Integer>();
-		keyList=new HashMap<String, Boolean>();
+		keyList=new HashMap<Integer, String>();
 		//nodeIpMap=new HashMap<Integer,String>();
 		init();
 	}
@@ -139,11 +150,7 @@ class FingerTable{
 		return preTable.get(i);
 	}*/
 	
-	/**
-	 * 
-	 * @param i
-	 * @return something like 192.168.1.3:8000
-	 */
+	
 	
 	
 	public void init(){
@@ -165,19 +172,32 @@ class FingerTable{
 			}
 			sucId=0;
 			preId=0;
+			prepreId=0;
+			sucsucId=0;
+			
 			sucIP=ip;
 			preIP=ip;
+			sucsucIP=ip;
+			prepreIP=ip;
+			
+			
+			sucsucPort=Peer.DEFAULT_DEST_PORT;
+			preprePort=Peer.DEFAULT_DEST_PORT;
 			sucPort=Peer.DEFAULT_DEST_PORT;
 			prePort=Peer.DEFAULT_DEST_PORT;
+			
 		 for (int i=0; i<16; i++)   // all the files contained in node 0 at first.
-			keyList.put(String.valueOf(i), true);
-	    }
+		 {	 
+			 keyList.put(i, "This is data item "+i);
+		 }
+	    
+		}
 		
 		else{         //for other nodes
 			sucId=-1;
 			preId=-1;
-		 for (int i=0; i<16; i++)
-			 keyList.put(String.valueOf(i), false);
+		 //for (int i=0; i<16; i++)
+			// keyList.put(String.valueOf(i), false);
 		}
 	}
 	
@@ -203,7 +223,16 @@ class FingerTable{
 			System.out.println(i+"   "+"from "+(identifier+Math.pow(2, i))%16+" to "+(identifier+Math.pow(2, i+1))%16+"  "+sucTable.get(i)+"  "+ipTable.get(i));
 			//k=(int) Math.pow(2, i);
 		}
+		System.out.println("key list: ");
+		for (Map.Entry<Integer, String> entry : keyList.entrySet()) 
+		{
+			int key=entry.getKey();
+			String value=entry.getValue();
+			System.out.println(key+" : "+value);
+		}
 	}
+	
+	
 	
 }}
 	

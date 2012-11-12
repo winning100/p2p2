@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Map;
 
 /***
  * 
@@ -110,7 +111,7 @@ class RequestHandle extends Thread{
 	    //Thread thread=null;
 	    if (str[0].equals("joinMsg"))
 	    	{
-	    	JoinHandle joinHandle=new JoinHandle(Integer.parseInt(str[1]));
+	    	//JoinHandle joinHandle=new JoinHandle(Integer.parseInt(str[1]));
 	    	
 	    	}
 	    
@@ -118,7 +119,12 @@ class RequestHandle extends Thread{
 	    else if (str[0].equals("yoursuc")){
 	    	PrintWriter pw=getWriter();
 	    	pw.println(peer.fingerTable.sucIP+" "+peer.fingerTable.sucPort+" "+peer.fingerTable.sucId);
-	    	
+	    	return;
+	    }
+	    else if(str[0].equals("yourpre")){
+	    	PrintWriter pw=getWriter();
+	    	pw.println(peer.fingerTable.sucIP+" "+peer.fingerTable.sucPort+" "+peer.fingerTable.sucId);
+	    	return;
 	    }
 	    else if (str[0].equals("closestprecedingfinger")){
 	    	int id=Integer.parseInt(str[1]);
@@ -160,11 +166,198 @@ class RequestHandle extends Thread{
 			}
 	    	
 	    }
+	    else if (str[0].equals("transfer_key")){
+	    	String new_ip=str[1];
+	    	int new_port=Integer.parseInt(str[2]);
+	    	int new_id=Integer.parseInt(str[3]);
+	    	int new_preid=Integer.parseInt(str[4]);
+	    	try {
+				transfer_keys(new_ip,new_port,new_id,new_preid);
+			} catch (Exception e) {
+			
+				e.printStackTrace();
+			}
+	    }
+	    
+	    else if(str[0].equals("give_you_data_item"))
+	    {// cmd: give_you_data_item key#this is data item 1 
+	    	String []s=cmd_rec.split("#");
+	    	String value=s[1];
+	    	String []k=s[0].split(" ");
+	    	int key=Integer.parseInt(k[1]);
+	    	receive_data_item(key, value);
+	    	
+	    }
+	    
+	    else if (str[0].equals("search")){
+	    	int search_id=Integer.parseInt(str[1]);
+	    	String origin_ip=str[2];
+	    	int origin_port=Integer.parseInt(str[3]);
+	    	int ttl=Integer.parseInt(str[4]);
+	    	int get=Integer.parseInt(str[5]);
+	    	try {
+				search_data(search_id,origin_ip,origin_port,ttl,get);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	    }
+	    
+	    else if (str[0].equals("find")){
+	    	int result=Integer.parseInt(str[1]);
+	    	if (result==-1){
+	    		System.out.println("search result: data not in the ring");
+	    		return;}
+	    	get_data_addr(str[2],Integer.parseInt(str[3]),Integer.parseInt(str[4]), Integer.parseInt(str[5]),Integer.parseInt(str[6]));
+	    	
+	    }
+	    
+	    else if (str[0].equals("le")){
+	    	int le_id=Integer.parseInt(str[1]);
+	    	String le_suc_ip=str[2];
+	    	int le_suc_port=Integer.parseInt(str[3]);
+	    	int le_suc_id=Integer.parseInt(str[4]);
+	    	int ttl=Integer.parseInt(str[5]);
+	    	try {
+				rec_leave(le_suc_ip,le_suc_port,le_id,le_suc_id,ttl);
+			} catch (Exception e) {
+			
+				e.printStackTrace();
+			}
+	    }
+	    else if (str[0].equals("your_suc_le")){
+	    	int next_id=Integer.parseInt(str[2]);
+    		String next_ip=str[3];
+    		int next_port=Integer.parseInt(str[4]);
+    		updateSuc(next_id,next_ip,next_port);
+    		
+    	}
+	    else if (str[0].equals("your_pre_le")){
+	    	int next_id=Integer.parseInt(str[2]);
+    		String next_ip=str[3];
+    		int next_port=Integer.parseInt(str[4]);
+    		updatePre(next_id,next_ip,next_port); 
+	    	
+	    }
 	    else if (str[0].equals("")){
 	    	
 	    }
 	    
 	    
+	}
+	
+	void rec_leave(String le_ip, int le_port, int le_id, int le_suc_id, int ttl) throws UnknownHostException, IOException{
+		if (ttl<0)
+			return;
+		if (le_id==peer.getId())
+			return;
+		
+		for (int i=0; i<peer.fingerTable.tableSize;i++){
+			int finger_node=peer.fingerTable.getSucTableElement(i);
+			if (finger_node==le_id){
+				peer.fingerTable.sucTable.set(i,le_suc_id);
+				peer.fingerTable.ipTable.set(i, le_ip+" "+le_port);
+			}
+		}
+		// forward the leave msg to suc.
+		Socket socket=new Socket(peer.fingerTable.sucIP,peer.fingerTable.sucPort);
+		String new_cmd="le "+le_id+" "+le_ip+" "+le_port+" "+le_suc_id+" "+(ttl-1);
+		PrintWriter pw=getWriter(socket);
+		pw.println(new_cmd);
+		socket.close();
+		
+	}
+	
+	void get_data_addr(String des_ip, int des_port, int des_id, int search_id, int get){
+			
+		System.out.println("search result for "+search_id+" : "+des_ip+" "+des_port+" "+des_id);
+		
+		if (get==1){
+			peer.fingerTable.keyList.put(search_id, "This is data item "+search_id);
+			System.out.println("already get the data");
+		}
+			
+			
+	}
+	
+	void search_data(int searchid, String origin_ip, int origin_port, int ttl, int get) throws IOException
+	{
+		Socket socket=new Socket(origin_ip,origin_port);
+		PrintWriter pw=getWriter(socket);
+		String new_cmd="";
+		if (ttl<0)
+		{
+			new_cmd="find "+"-1 "+searchid;
+			pw.println(new_cmd);
+			socket.close();
+			return;
+		}
+		if (peer.fingerTable.keyList.containsKey(searchid)){
+			new_cmd="find "+"0 "+peer.fingerTable.ip+" "+peer.fingerTable.port+" "+peer.getId()+" "+searchid+" "+get;
+			pw.println(new_cmd);
+			socket.close();
+			return;
+		}
+		
+		//forward the search request to proper finger
+		else{
+			int low=peer.getId();
+			int high=-1;
+			
+			for (int i=0; i<4; i++){
+				high=(int) ((peer.getId()+Math.pow(2, i))%16);
+				if (RequestHandle.inRange(searchid, low, high, false, true))
+				{   String []p=peer.fingerTable.getIp(i).split(" ");
+				    String nextIp=p[0];
+				    int nextPort=Integer.parseInt(p[1]);
+				    //send out search information
+				    
+					searchNext(nextIp,nextPort,origin_ip, origin_port, searchid,ttl-1, get);
+					return;
+				}	
+		     }
+		   }
+  	 }
+	
+	void searchNext(String next_ip,int next_port, String origin_ip, int origin_port, int searchid, int ttl, int get) throws IOException{
+		Socket socket=new Socket(next_ip,next_port);
+		PrintWriter pw=getWriter(socket);
+		String new_cmd="search "+searchid+" "+origin_ip+" "+origin_port+" "+ttl+" "+get; 
+		pw.println(new_cmd);
+		socket.close();
+	}
+	
+	void transfer_keys(String new_ip, int new_port, int new_id, int new_pre) throws UnknownHostException, IOException{
+		ArrayList<Integer> removedList=new ArrayList<Integer>();
+		for (Map.Entry<Integer, String> entry : peer.fingerTable.keyList.entrySet()) {
+			   int key = entry.getKey();
+			   String value = entry.getValue();
+			   
+			   if (inRange(key, new_pre, new_id,true, false)){
+				   transfer_data_item(new_ip, new_port, key,value );
+				   removedList.add(key);
+			   }
+			   
+			   
+			   //System.out.println("key=" + key + " value=" + value);
+			  }
+		for (int i=0; i<removedList.size();i++){
+			int k=removedList.get(i);
+			peer.fingerTable.keyList.remove(k);
+		}
+	}
+	
+	void transfer_data_item(String new_ip, int new_port, int key, String value) throws UnknownHostException, IOException{
+		Socket socket=new Socket(new_ip, new_port);
+		PrintWriter pw=getWriter(socket);
+		pw.println("give_you_data_item "+key+"#"+value);
+		//peer.fingerTable.keyList.remove(key);
+		socket.close();
+	}
+	
+	
+	void receive_data_item(int key, String value){
+		peer.fingerTable.keyList.put(key, value);
 	}
 	
 	void new_node_come(int id, String ip, int port) throws UnknownHostException, IOException{
@@ -318,119 +511,21 @@ class RequestHandle extends Thread{
 	}
 	
 	
-	/**
-	 * use fingerTable find out the predecessor for a given Id
-	 * @param id
-	 * @return -1 if error
-	 */
-	/*int findPre(int id){
-		int localId=peer.getId();
-		
-		int range1=(localId+1)%16;
-		int range2=(localId+2)%16;
-		int range3=(localId+4)%16;
-		int range4=(localId+12)%16;
-		
-		if (range1 > range2)
-		{
-			if ( id >= range1 || id < range2)
-				return peer.fingerTable.getPreTableElement(0);
-		}
-		else
-		{
-			if ( id>=range1 && id < range2)
-				return peer.fingerTable.getPreTableElement(0);
-		}
-		
-		
-		if (range2 > range3)
-		{
-			if ( id >= range2 || id < range3)
-				return peer.fingerTable.getPreTableElement(1);
-		}
-		else
-		{
-			if ( id>=range2 && id < range3)
-				return peer.fingerTable.getPreTableElement(1);
-		}
-		
-		if (range3 > range4)
-		{
-			if ( id >= range3 || id < range4)
-				return peer.fingerTable.getPreTableElement(2);
-		}
-		else
-		{
-			if ( id>=range3 && id < range4)
-				return peer.fingerTable.getPreTableElement(2);
-		}
-		
-		if (range4 > range1)
-		{
-			if ( id >= range4 || id < range1)
-				return peer.fingerTable.getPreTableElement(3);
-		}
-		else
-		{
-			if ( id>=range4 && id < range1)
-				return peer.fingerTable.getPreTableElement(3);
-		}
-		
-		
-		return -1;
-	}*/
-	
-	
-	
-	/*ArrayList<Integer> setFingerTable(int id){
-		ArrayList<Integer> newTable=new ArrayList<Integer>();
-		
-	}*/
-	
-	/**
-	 * 
-	 * @author jordan
-	 *
-	 */
+
 	class JoinHandle {
-		int joinId;
+		String dest_ip;
+		int dest_port;
 		
-		JoinHandle( int joinId){
-			this.joinId=joinId;
+		JoinHandle( String dest_ip, int dest_port){
+			this.dest_ip=dest_ip;
+			this.dest_port=dest_port;
 		}
-		
-		
-		
 		
 		void updateTable()
 		{
 			
 			int identifier=peer.getId();
-			
-			//find successor of identifer+1, identifier+2,
-			//identifier+4, identifier+8           %16
-			
-			/*for (int i=0; i<4; i++){
-			    if (i!=3)
-			    {
-			    	if (joinId>=(identifier+Math.pow(2, i)%16) || joinId<(identifier+Math.pow(2, i+1))){
-			    		int current_suc=peer.fingerTable.table.get(i);
-			    		int joinIdDistance=Math.abs(joinId-current_suc);
-			    		int originDistance=Math.abs(current_suc-peer.getId());
-			    		if (originDistance==0)
-			    			originDistance=16;
-			    		
-			    		if (originDistance > joinIdDistance)
-			    			peer.fingerTable.table.set(i, joinId);
-			    	}
-			    		
-			    }
-				
-			  //if ( ((peer.getId()+Math.pow(2, i))%16))	
-			}*/
-			//"from "+(identifier+Math.pow(2, i))%16+" to "+(identifier+Math.pow(2, i+1))%16
-			
-			
+	
 			
 		}
 		
