@@ -502,6 +502,8 @@ class CommandHandle extends Thread{
 				    int nextPort=Integer.parseInt(p[1]);
 				    
 				    //send out search information
+				    System.out.println(searchId+" in range from "+low+" to "+high);
+				    System.out.println("next search ip: "+nextIp+" "+nextPort);
 					searchNext(nextIp,nextPort,peer.fingerTable.ip,peer.fingerTable.port, searchId, Peer.TTL,get);
 					return;
 				}
