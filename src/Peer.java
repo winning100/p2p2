@@ -10,6 +10,9 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
+//Peer class stores basic information of Node
+// such as finger table, id, server port and suc, pre......
+
 public class Peer{
 	
 private	int port;
@@ -17,17 +20,15 @@ private int identifier;
 private ServerSocket serverSocket;
 private Socket socket;
 
-public static Map<Integer,Integer> idToPort;
-
 
 public static String DEFAULT_DEST_IP="localhost";
 public static int DEFAULT_DEST_PORT=8000;
-public static String FILE_DIRECTORY="file/";
 
-public static int TTL=16;
+public static int TTL=16; 
 
+// finger table
 FingerTable fingerTable;
-//public static int PEER_SERVER_PORT
+
 
 /**
  * 
@@ -48,7 +49,7 @@ Peer (int initPort, int identifier) throws Exception {
 	//}
 }
 
-
+// display the finger table
 public void display(){
 	fingerTable.display();
 }
@@ -68,7 +69,7 @@ public int getId(){
 }
 
 /**
- * may not be used
+ * get local ip 
  * @return
  * @throws SocketException
  */
@@ -119,10 +120,10 @@ class FingerTable{
 	int preprePort;
 	
 	ArrayList <Integer> sucTable;    // store successor's Node Id
-	ArrayList <String>  ipTable;
+	ArrayList <String>  ipTable;   // store successor's Ip and port
 	
 	//map key to data
-	Map<Integer, String> keyList;
+	Map<Integer, String> keyList; // store the data item
 	
 	//Map<Integer,String> nodeIpMap; //convert nodeId to ip address.
 	
@@ -186,6 +187,7 @@ class FingerTable{
 			sucPort=Peer.DEFAULT_DEST_PORT;
 			prePort=Peer.DEFAULT_DEST_PORT;
 			
+			//Stable stable=new Stable();
 		 for (int i=0; i<16; i++)   // all the files contained in node 0 at first.
 		 {	 
 			 keyList.put(i, "This is data item "+i);
@@ -213,7 +215,7 @@ class FingerTable{
 		return sucId;
 		
 	}
-	
+	// display the finger table and key item list
 	public void display(){
 		int k=0;
 		System.out.println(getId()+"'s fingerTable");

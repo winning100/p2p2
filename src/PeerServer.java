@@ -1,7 +1,12 @@
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-
+/**
+ * This class store's information of the 
+ * server in the node
+ * 
+ *
+ */
 class PeerServer extends Thread{
 	
 	private int serverPort;
@@ -55,7 +60,7 @@ class PeerServer extends Thread{
 		serverSocket=new ServerSocket(serverPort);
 		while (true){
 		socket=serverSocket.accept();
-		System.out.println("receive request");
+		//System.out.println("receive request");
 		Thread requestHandle=new RequestHandle(socket,peer);
 		requestHandle.start();
 		
