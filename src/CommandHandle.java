@@ -8,7 +8,12 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Timer;
-
+/**
+ * This class used to analyze the input command and generate 
+ * socket request. 
+ * 
+ *
+ */
 class CommandHandle extends Thread{
 	String cmd;
 	
@@ -26,10 +31,15 @@ class CommandHandle extends Thread{
 			handle();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			//e.printStackTrace();
+			System.out.println("change another ip and port");
 		}
 	}
-	
+	/**
+	 * get socket buffer reader
+	 * @param socket
+	 * @return
+	 */
 	public BufferedReader getReader(Socket socket){
 		InputStream socketIn=null;
 		try {
@@ -42,7 +52,11 @@ class CommandHandle extends Thread{
 		}
 		return new BufferedReader(new InputStreamReader(socketIn));
 	}
-	
+	/***
+	 * get socket print writer
+	 * @param socket
+	 * @return
+	 */
 	public PrintWriter getWriter(Socket socket){
 		OutputStream socketOut=null;
 		try {
@@ -67,12 +81,18 @@ class CommandHandle extends Thread{
 		return true;
 	}
 	
+	/***
+	 * according to the command type, using different class 
+	 * and methods to handle the command
+	 * @throws Exception
+	 */
 	public void handle() throws Exception{
 		//System.out.println("in the commandHandle");
 		if (!isGoodCommand())
 			falseCommand();
 		else{
 			Thread cmdThread=null;
+			// it's a get command, download a data item
 			if (cmd.startsWith("get")){
 				
 				String []s=cmd.split(" ");
@@ -81,34 +101,40 @@ class CommandHandle extends Thread{
 				search.startSearch(1);
 				
 			}
+			//ls command, display the finger table
 			else if (cmd.startsWith("ls")){
 				LS ls=new LS();
 				ls.list();
 				}
+			//search command, search the key in the ring
 			else if (cmd.startsWith("search"))
 				{String []s=cmd.split(" ");
 				 int searchId=Integer.parseInt(s[1]);
 				 Search search=new Search(searchId);
 				 search.startSearch(0);
 				}
+			//join command, join in a ring
 			else if (cmd.startsWith("join"))
-				{Join join=new Join(Peer.DEFAULT_DEST_IP,Peer.DEFAULT_DEST_PORT);
-				 join.startJoin();
+				{String []s=cmd.split(" ");
+				Join join=null;
+				if (s.length>1)
+				{String join_ip=s[1];
+				 int join_port=Integer.parseInt(s[2]);
+				 join=new Join(join_ip,join_port);	
+				}
+				else
+				join=new Join(Peer.DEFAULT_DEST_IP,Peer.DEFAULT_DEST_PORT);
+				
+				join.startJoin();
 				
 				}
+			//le command, leave the ring
 			else if (cmd.startsWith("le"))
 				{Leave leave=new Leave();
 				leave.start_leave();
 				 }
-			else if (cmd.startsWith("findpre"))
-			{  
-			}
-			else if (cmd.startsWith("findsuc"))	
-			{
-				
-			}	
 			else
-				{System.out.println("something bad happens");
+				{System.out.println("input command is bad");
 				 return;
 				}
 			//cmdThread=new Thread();
@@ -126,11 +152,15 @@ class CommandHandle extends Thread{
 	}
 	
 	
-
+/***
+ * 
+ * This class is responsible for joining in the ring
+ *
+ */
 	
 	public class Join {
 		
-		String dest_ip;
+		String dest_ip; // the default ip and port
 		int dest_port;
 		
 		Join(){
@@ -147,12 +177,13 @@ class CommandHandle extends Thread{
 		/**
 		 * 
 		 * when join network, it has to find suc
+		 * @throws Exception 
 		 * @throws IOException 
 		 * @throws UnknownHostException 
 		 * 
 		 * return address and nodeId of suc
 		 */	
-		String findSuc(int localId) throws UnknownHostException, IOException{
+		String findSuc(int localId) throws Exception {
 			String preString=findPre(localId);
 			String []k=preString.split(" ");
 			String preIp=k[0];
@@ -171,7 +202,7 @@ class CommandHandle extends Thread{
 		 * 
 		 * return address and nodeId of suc
 		 */
-		String findSuc(String ip, int port) throws UnknownHostException, IOException{
+		String findSuc(String ip, int port) throws Exception {
 			
 			Socket socket=new Socket(ip,port);
 			PrintWriter pw=RequestHandle.getWriter(socket);
@@ -183,9 +214,18 @@ class CommandHandle extends Thread{
 			return suc;
 			
 			
+			
 		}
-		
-		String findPre(String ip, int port) throws UnknownHostException, IOException{
+		/***
+		 * 
+		 * @param ip
+		 * @param port
+		 * @return
+		 * @throws UnknownHostException
+		 * @throws IOException
+		 * given a node and return its pre
+		 */
+		String findPre(String ip, int port) throws Exception{
 			
 			Socket socket=new Socket(ip,port);
 			PrintWriter pw=RequestHandle.getWriter(socket);
@@ -203,21 +243,22 @@ class CommandHandle extends Thread{
 		 * try to find its own pre in network
 		 * @param id
 		 * @return
+		 * @throws Exception 
 		 * @throws IOException 
 		 * @throws UnknownHostException 
 		 */
-		String findPre(int localId) throws UnknownHostException, IOException{
+		String findPre(int localId) throws Exception {
 			System.out.println("+++++++++in findPre++++++");
 			//int localId=peer.getId();
-			String remoteSucString=findSuc(Peer.DEFAULT_DEST_IP,Peer.DEFAULT_DEST_PORT);
+			String remoteSucString=findSuc(peer.DEFAULT_DEST_IP,peer.DEFAULT_DEST_PORT);
 			String []str=remoteSucString.split(" ");
 			String remoteIp=str[0];
 			int remotePort=Integer.parseInt(str[1]);
 			int remoteSuc=Integer.parseInt(str[2]);
 			
-			String remoteNodeIp=Peer.DEFAULT_DEST_IP;
+			String remoteNodeIp=peer.DEFAULT_DEST_IP;
 			
-			int remoteNodePort=Peer.DEFAULT_DEST_PORT;
+			int remoteNodePort=peer.DEFAULT_DEST_PORT;
 			
 			System.out.println("the default suc is "+remoteSuc);
 			int remoteNodeId=0;
@@ -269,26 +310,28 @@ class CommandHandle extends Thread{
 		}
 		/**
 		 * the entrance to join the network
-		 * @throws UnknownHostException
-		 * @throws IOException
+		 * @throws Exception 
 		 */
-		public void startJoin() throws UnknownHostException, IOException{
-		
+		public void startJoin() throws Exception{
+		    System.out.println("+++In the startJoin+++");
 			init_finger_table("123",888,0);
 			update_neighbour();
 			update_others();
+			System.out.println("before transfer key");
 			transfer_keys();
 			suc_suc_pre_pre();
+			Stable stable=new Stable(peer.fingerTable.preId,peer.fingerTable.preIP,peer.fingerTable.prePort);
+			stable.start();
 			
 		}
-		
-		void suc_suc_pre_pre() throws UnknownHostException, IOException{
+		/***
+		 * 
+		 * @throws Exception 
+		 */
+		void suc_suc_pre_pre() throws Exception{
 			String sucIp=peer.fingerTable.sucIP;
 			int sucPort=peer.fingerTable.sucPort;
 		
-			
-			
-			
 			String preIp=peer.fingerTable.preIP;
 			int prePort=peer.fingerTable.prePort;
 			
@@ -309,7 +352,7 @@ class CommandHandle extends Thread{
 		}
 		        
 		//use an arbitrary node to initiate the local table
-		void init_finger_table(String ip1, int port1, int remoteId123) throws UnknownHostException, IOException{
+		void init_finger_table(String ip1, int port1, int remoteId123) throws Exception{
 			String preString=findPre(peer.getId());
 			String []preS=preString.split(" ");
 			String preIp=preS[0];
@@ -355,9 +398,76 @@ class CommandHandle extends Thread{
 				peer.fingerTable.sucTable.set(i, suc);
 				peer.fingerTable.ipTable.set(i, sucIp+" "+sucPort);
 			}
+			/**
+			 * suc_suc_pre_pre test code
+			 */
+			init_suc_suc_pre_pre();
+				
+			
 			
 		}
+		
+		void init_suc_suc_pre_pre(){
+			String cmd="yoursuc";
+			Socket socket=null;
+			try {
+				socket=new Socket(peer.fingerTable.sucIP,peer.fingerTable.sucPort);
+			}catch (IOException e) {
+				
+				e.printStackTrace();
+			}
+			PrintWriter pw=getWriter(socket);
+			BufferedReader br=getReader(socket);
+			pw.println(cmd);
+			String k="";
+			try {
+				k=br.readLine();
+			} catch (IOException e) {
+			
+				e.printStackTrace();
+			}
+			String []s=k.split(" ");
+			peer.fingerTable.sucsucIP=s[0];
+			peer.fingerTable.sucsucPort=Integer.parseInt(s[1]);
+			peer.fingerTable.sucsucId=Integer.parseInt(s[2]);
+			
+			System.out.println("@@@@@@@@@@@@@@@");
+			cmd="yourpre";
+			System.out.println("asdas: "+peer.fingerTable.preIP+" "+peer.fingerTable.port);
+			try {
+				socket=new Socket(peer.fingerTable.preIP,peer.fingerTable.port);
+			}catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+            
+			pw=getWriter(socket);
+			br=getReader(socket);
+			pw.println(cmd);
+			
+			try {
+				k=br.readLine();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			System.out.println("###########");
+			s=k.split(" ");
+			peer.fingerTable.prepreIP=s[0];
+			peer.fingerTable.preprePort=Integer.parseInt(s[1]);
+			peer.fingerTable.prepreId=Integer.parseInt(s[2]);
+			
+		}
+	
+		
+		/**
+		 * When a join in the ring, it has to send msg to tell others to
+		 * update their finger table
+		 * @throws UnknownHostException
+		 * @throws IOException
+		 */
 		void update_others() throws UnknownHostException, IOException {
+			System.out.println("++++update others++++");
 			int localId=peer.getId();
 			String localIp=peer.fingerTable.ip;
 			int localport=peer.fingerTable.port;
@@ -382,8 +492,13 @@ class CommandHandle extends Thread{
 			}*/
 		}
 		
+		/***
+		 * update neighbour's successor and predecessor
+		 * @throws UnknownHostException
+		 * @throws IOException
+		 */
 		void update_neighbour() throws UnknownHostException, IOException{
-			
+			System.out.println("++++update neighbour++++");
 			int suc=peer.fingerTable.sucId;
 			String sucIp=peer.fingerTable.sucIP;
 			int sucPort=peer.fingerTable.sucPort;
@@ -392,7 +507,7 @@ class CommandHandle extends Thread{
 			String preIp=peer.fingerTable.preIP;
 			int prePort=peer.fingerTable.prePort;
 			
-			String cmd="newSuc "+peer.fingerTable.ip+" "+peer.fingerTable.port+" "+peer.getId();
+			String cmd="newSuc "+peer.fingerTable.ip+" "+peer.fingerTable.port+" "+peer.getId()+" "+suc+" "+sucIp+" "+sucPort;
 			Socket socket=new Socket(preIp,prePort);
 			PrintWriter pw=RequestHandle.getWriter(socket);
 			pw.println(cmd);
@@ -400,16 +515,25 @@ class CommandHandle extends Thread{
 			
 			socket=new Socket(sucIp, sucPort);
 			pw=RequestHandle.getWriter(socket);
-			cmd="newPre "+peer.fingerTable.ip+" "+peer.fingerTable.port+" "+peer.getId();
+			cmd="newPre "+peer.fingerTable.ip+" "+peer.fingerTable.port+" "+peer.getId()+" "+pre+" "+preIp+" "+prePort;
 			pw.println(cmd);
 			socket.close();
 		}
 		
+		/**
+		 * When a node join in a network, other nodes must transfer the keys,
+		 * which belong to the new node.
+		 * @throws UnknownHostException
+		 * @throws IOException
+		 */
 		void transfer_keys() throws UnknownHostException, IOException{
+			System.out.println("++++ In the transfer key++++");
 			int sucId=peer.fingerTable.sucId;
 			String sucIp=peer.fingerTable.sucIP;
 			int sucPort=peer.fingerTable.sucPort;
 			String cmd="transfer_key "+peer.fingerTable.ip+" "+peer.fingerTable.port+" "+peer.getId()+" "+peer.fingerTable.preId;
+			if (sucId==peer.getId())
+				return;
 			Socket socket=new Socket(peer.fingerTable.sucIP,peer.fingerTable.sucPort);
 			PrintWriter pw=getWriter(socket);
 			pw.println(cmd);
@@ -417,7 +541,12 @@ class CommandHandle extends Thread{
 			
 		}
 	}
-	
+	/***
+	 * This class is used for le command
+	 * A node leaves the ring
+	 *
+	 *
+	 */
 	class Leave{
 		
 		
@@ -427,10 +556,15 @@ class CommandHandle extends Thread{
 			tell_neighbor();
 			System.out.println("already left the network");
 		}
-		
+		/**
+		 * send its own suc and suc_suc information to its predecessor
+		 * send its own pre and pre_pre information to its successor
+		 * @throws UnknownHostException
+		 * @throws IOException
+		 */
 		void tell_neighbor() throws UnknownHostException, IOException{
-			String cmd_to_pre="your_suc_le "+peer.getId()+" "+peer.fingerTable.sucId+" "+peer.fingerTable.sucIP+" "+peer.fingerTable.sucPort;
-			String cmd_to_suc="your_pre_le "+peer.getId()+" "+peer.fingerTable.preId+" "+peer.fingerTable.preIP+" "+peer.fingerTable.prePort;
+			String cmd_to_pre="your_suc_le "+peer.getId()+" "+peer.fingerTable.sucId+" "+peer.fingerTable.sucIP+" "+peer.fingerTable.sucPort+" "+peer.fingerTable.sucsucId+" "+peer.fingerTable.sucsucIP+" "+peer.fingerTable.sucsucPort;
+			String cmd_to_suc="your_pre_le "+peer.getId()+" "+peer.fingerTable.preId+" "+peer.fingerTable.preIP+" "+peer.fingerTable.prePort+" "+peer.fingerTable.prepreId+" "+peer.fingerTable.prepreIP+" "+peer.fingerTable.preprePort;
 			
 			Socket socket=new Socket(peer.fingerTable.preIP,peer.fingerTable.prePort);
 			PrintWriter pw=getWriter(socket);
@@ -441,9 +575,28 @@ class CommandHandle extends Thread{
 			pw=getWriter(socket);
 			pw.println(cmd_to_suc);
 			socket.close();
+			/**
+			 * test code
+			 */
+			String cmd="set_your_suc_suc "+peer.fingerTable.sucId+" "+peer.fingerTable.sucIP+" "+peer.fingerTable.sucPort;
+			socket=new Socket(peer.fingerTable.prepreIP,peer.fingerTable.preprePort);
+			pw=getWriter(socket);
+			pw.println(cmd);
+			socket.close();
 			
+			cmd="set_your_pre_pre "+peer.fingerTable.preId+" "+peer.fingerTable.preIP+" "+peer.fingerTable.prePort;
+			socket=new Socket(peer.fingerTable.sucsucIP,peer.fingerTable.sucsucPort);
+			pw=getWriter(socket);
+			pw.println(cmd);
+			socket.close();
 		}
-		
+		/**
+		 * When a node wants to leave the ring, it has to transfer its keys
+		 * to its successor
+		 * 
+		 * @throws UnknownHostException
+		 * @throws IOException
+		 */
 		void leave_transfer() throws UnknownHostException, IOException{
 			int suc_id=peer.fingerTable.sucId;
 			String suc_ip=peer.fingerTable.sucIP;
@@ -458,7 +611,10 @@ class CommandHandle extends Thread{
 				socket.close();
 			}
 		}
-		
+		/**
+		 * circulate the leava msg in the ring, all the nodes in the network 
+		 * will update their finger table
+		 */
 		void send_leave_msg(){
 			int leave_id=peer.getId();
 			String suc_ip=peer.fingerTable.sucIP;
@@ -475,6 +631,11 @@ class CommandHandle extends Thread{
 		}
 	}
 	
+	/**
+	 * This class is used to handle search command
+	 * 
+	 *
+	 */
 	class Search{
 		int searchId;
 		Search(int searchId){
@@ -502,15 +663,26 @@ class CommandHandle extends Thread{
 				    int nextPort=Integer.parseInt(p[1]);
 				    
 				    //send out search information
-				    System.out.println(searchId+" in range from "+low+" to "+high);
-				    System.out.println("next search ip: "+nextIp+" "+nextPort);
 					searchNext(nextIp,nextPort,peer.fingerTable.ip,peer.fingerTable.port, searchId, Peer.TTL,get);
 					return;
 				}
 				
 			}
 		}
-		
+		/***
+		 * If the local doesn't have the key,
+		 * use the finger table to find the next node,
+		 * which may contain the key.
+		 * @param nextIp
+		 * @param nextPort
+		 * @param localip
+		 * @param localport
+		 * @param localid
+		 * @param ttl
+		 * @param get
+		 * @throws UnknownHostException
+		 * @throws IOException
+		 */
 		void searchNext(String nextIp,int nextPort,String localip, int localport, int localid, int ttl, int get) throws UnknownHostException, IOException{
 			Socket socket=new Socket(nextIp,nextPort);
 			PrintWriter pw=getWriter(socket);
@@ -520,28 +692,52 @@ class CommandHandle extends Thread{
 		}
 		
 	}
-	
+	/**
+	 * This class is used to get the data item
+	 * 
+	 *
+	 */
 	class Get{
 		int key;
 		Get (int key) {
 			this.key=key;
 		}
-		
+		/**
+		 * use search class to find out the key's address and data item
+		 */
 		void start_get(){
 			Search search=new Search(key);
 		}
 	}
 	
-	
+	/**
+	 * This thread is call periodically 
+	 * It detect its predecessor to see if it works
+	 * If there is something wrong with the predecessor, 
+	 * It will take actions to reconstruct the affected part in the ring
+	 * @author jordan
+	 *
+	 */
 	
 	class Stable extends Thread{
 		
+		int detect_id;
+		String detect_ip;
+		int detect_port;
 		
 		
+		public Stable(int id,String ip,int port){
+			this.detect_id=id;
+			this.detect_ip=ip;
+			this.detect_port=port;
+		}
 		@Override
 		public void run(){
 			while(true){
-				
+				if (!detectPre()){
+					preRecover();
+					sendRecover();
+				}
 				
 				try {
 					sleep(2000);
@@ -550,25 +746,118 @@ class CommandHandle extends Thread{
 					e.printStackTrace();
 				}
 			}
-			
-			
-			
-			
 		}
 		
-		
-		void detectPre(){
-			String preIp=peer.fingerTable.preIP;
-			int prePort=peer.fingerTable.prePort;
+		/**
+		 * rule out the node's predecessor in the ring.
+		 */
+		void preRecover(){
+			String ip=peer.fingerTable.prepreIP;
+			int port=peer.fingerTable.preprePort;
+			int id=peer.fingerTable.prepreId;
+			
+			
+			String cmd="your_suc_le "+peer.getId()+" "+peer.getId()+" "+peer.fingerTable.ip+" "+peer.fingerTable.port+" "+peer.fingerTable.sucId+" "+peer.fingerTable.sucIP+" "+peer.fingerTable.sucPort;
 			
 			Socket socket=null;
 			try {
-				socket = new Socket(preIp,prePort);
-			} catch (Exception e) {
-			
-				//preLost(); 
+				socket=new Socket(ip,port);
+			} catch (IOException e) {
+				
 				e.printStackTrace();
-				return ;
+				return;
+			}
+			PrintWriter pw=getWriter(socket);
+			
+			pw=getWriter(socket);
+			pw.println(cmd);  //pre's suc and suc_suc updated
+			
+			
+			cmd="your_pre_pre_le "+peer.getId()+" "+id+" "+ip+" "+port;
+			
+			try {
+				socket=new Socket(peer.fingerTable.sucIP,peer.fingerTable.sucPort);
+			}
+			 catch (IOException e) {
+				e.printStackTrace();
+				return;
+			}
+			
+			pw=getWriter(socket);
+			pw.println(cmd);// after this, neighbours are all updated
+			
+			//below will update self
+			peer.fingerTable.preId=peer.fingerTable.prepreId;
+			peer.fingerTable.preIP=peer.fingerTable.prepreIP;
+			peer.fingerTable.prePort=peer.fingerTable.preprePort;
+			
+			try {
+				socket=new Socket(peer.fingerTable.preIP,peer.fingerTable.prePort);
+			} catch (IOException e) {
+				e.printStackTrace();
+				return;
+			}
+			
+			cmd="yourpre";
+			pw=getWriter(socket);
+			pw.println(cmd);
+			BufferedReader br=getReader(socket);
+			String rec="";
+			try {
+				rec=br.readLine();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return;
+			}
+			String []s=rec.split(" ");
+			peer.fingerTable.prepreId=Integer.parseInt(s[2]);
+			peer.fingerTable.prepreIP=s[0];
+			peer.fingerTable.preprePort=Integer.parseInt(s[1]);
+		    
+			//update own's key list
+			for (int i=0; i<peer.fingerTable.sucTable.size();i++){
+				int fingerNode=peer.fingerTable.sucTable.get(i);
+				if (fingerNode == detect_id)
+					{peer.fingerTable.sucTable.set(i, peer.getId());
+					 peer.fingerTable.ipTable.set(i, peer.fingerTable.ip+" "+peer.fingerTable.port);
+					}
+			}
+		}
+		
+	/**
+	 * Circulate a leave msg to tell others that a node has left the ring
+	 */
+		void sendRecover(){
+			String cmd="le "+this.detect_id+" "+peer.fingerTable.ip+" "+peer.fingerTable.port+" "+peer.getId()+" "+16;
+			this.detect_id=peer.fingerTable.preId;
+			this.detect_ip=peer.fingerTable.preIP;
+			this.detect_port=peer.fingerTable.prePort;
+			Socket socket=null;
+			try {
+				socket=new Socket(peer.fingerTable.sucIP,peer.fingerTable.sucPort);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return;
+			}
+			PrintWriter pw=getWriter(socket);
+			pw.println(cmd);
+			
+		}
+		
+		/*boolean detectSuc(){
+			
+			String sucIp=peer.fingerTable.sucIP;
+			int sucPort=peer.fingerTable.sucPort;
+			
+			Socket socket=null;
+			try {
+				socket = new Socket(sucIp,sucPort);
+			} catch (Exception e) {
+			    
+				System.out.println("suc is lost");
+				return false;
 			}
 			PrintWriter pw=getWriter(socket);
 			pw.println("ping");
@@ -577,16 +866,50 @@ class CommandHandle extends Thread{
 			try {
 				rec_msg = br.readLine();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.out.println("suc lost");
+				return false;
 			}
+			//socket.close();
 			if (rec_msg.equals("pong"))
-				return;
+				return true;
+			return false;
+		}*/
+		/***
+		 * detect predecessor to see if it works 
+		 * @return
+		 */
+		
+		boolean detectPre(){
+			String preIp=peer.fingerTable.preIP;
+			int prePort=peer.fingerTable.prePort;
+			
+			Socket socket=null;
+			try {
+				socket = new Socket(preIp,prePort);
+			} catch (Exception e) {
+			    
+				System.out.println("pre is lost");
+				return false;
+			}
+			PrintWriter pw=getWriter(socket);
+			pw.println("ping");
+			BufferedReader br=getReader(socket);
+			String rec_msg="";
+			try {
+				rec_msg = br.readLine();
+			} catch (IOException e) {
+				System.out.println("pre lost");
+				return false;
+			}
+			//socket.close();
+			if (rec_msg.equals("pong"))
+				return true;
+			return false;
 		}
 		
 	}
 	
-	
+	//LS class handle the finger display function
 	
 	class LS {
 		
