@@ -348,8 +348,7 @@ class RequestHandle extends Thread{
 	 * handle search request, it may forward this request to its suc
 	 */
 	void search_data(int searchid, String origin_ip, int origin_port, int ttl, int get) throws IOException
-	{   
-		System.out.println("In the search_data");
+	{
 		Socket socket=new Socket(origin_ip,origin_port);
 		PrintWriter pw=getWriter(socket);
 		String new_cmd="";
@@ -371,7 +370,7 @@ class RequestHandle extends Thread{
 		else{
 			int low=peer.getId()+1;
 			int high=-1;
-			System.out.println("forward search request");
+			
 			for (int i=0; i<4; i++){
 				high=(int) ((low+Math.pow(2, i))%16);
 				if (RequestHandle.inRange(searchid, low, high, false, true))
@@ -381,15 +380,18 @@ class RequestHandle extends Thread{
 				   
 				    //send out search information
 <<<<<<< HEAD
+<<<<<<< HEAD
 				    
 =======
 >>>>>>> 2ddc4d13d63ea241bf679a53381200d4c2d1659f
+=======
+				    
+>>>>>>> 4ba1dcbef2e187f0876aa1c516210e0c5647d9f5
 				    System.out.println(searchid+"in range from "+low+" to "+high);
 				    System.out.println("forward addr: "+nextIp+" "+nextPort);
 					searchNext(nextIp,nextPort,origin_ip, origin_port, searchid,ttl-1, get);
 					return;
-				}
-				low=high;
+				}	
 		     }
 		   }
   	 }
