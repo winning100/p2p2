@@ -250,18 +250,18 @@ class CommandHandle extends Thread{
 		String findPre(int localId) throws Exception {
 			System.out.println("+++++++++in findPre++++++");
 			//int localId=peer.getId();
-			String remoteSucString=findSuc(peer.DEFAULT_DEST_IP,peer.DEFAULT_DEST_PORT);
+			String remoteSucString=findSuc(dest_ip,dest_port);
 			String []str=remoteSucString.split(" ");
 			String remoteIp=str[0];
 			int remotePort=Integer.parseInt(str[1]);
 			int remoteSuc=Integer.parseInt(str[2]);
 			
-			String remoteNodeIp=peer.DEFAULT_DEST_IP;
+			String remoteNodeIp=dest_ip;
 			
-			int remoteNodePort=peer.DEFAULT_DEST_PORT;
+			int remoteNodePort=dest_port;
 			
 			System.out.println("the default suc is "+remoteSuc);
-			int remoteNodeId=0;
+			int remoteNodeId=dest_port-8000;
 			while(true){
 			if (RequestHandle.inRange(localId,remoteNodeId,remoteSuc,true,false))
 			{   System.out.println(localId+"  in range from "+remoteNodeId+" to "+remoteSuc);

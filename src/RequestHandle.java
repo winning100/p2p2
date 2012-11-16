@@ -103,6 +103,11 @@ class RequestHandle extends Thread{
 			return;
 		}
 		
+		if (cmd_rec==null)
+			return;
+		
+		if (cmd_rec=="")
+			return;
 		if (!cmd_rec.startsWith("ping"))
 	    System.out.println("cmd_rec is "+cmd_rec);
 	    
@@ -379,14 +384,7 @@ class RequestHandle extends Thread{
 				    int nextPort=Integer.parseInt(p[1]);
 				   
 				    //send out search information
-<<<<<<< HEAD
-<<<<<<< HEAD
-				    
-=======
->>>>>>> 2ddc4d13d63ea241bf679a53381200d4c2d1659f
-=======
-				    
->>>>>>> 4ba1dcbef2e187f0876aa1c516210e0c5647d9f5
+
 				    System.out.println(searchid+"in range from "+low+" to "+high);
 				    System.out.println("forward addr: "+nextIp+" "+nextPort);
 					searchNext(nextIp,nextPort,origin_ip, origin_port, searchid,ttl-1, get);
